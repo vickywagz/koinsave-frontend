@@ -1,31 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-
-interface Transaction {
-  id: number;
-  type: "sent" | "received";
-  amount: number;
-  from?: string;
-  to?: string;
-  date: string;
-  note?: string;
-}
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  balance: number;
-}
+import {
+  getUserTransactions,
+  sendMoney,
+  User,
+  Transaction,
+} from "@/app/api/client";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Send Money modal
+  // Send Money modal state
   const [showModal, setShowModal] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [amount, setAmount] = useState<number | "">("");
@@ -40,9 +28,8 @@ export default function DashboardPage() {
       setUser(parsedUser);
 
       // Fetch transactions for this user
-      axios
-        .get(`http://localhost:4000/transactions?userId=${parsedUser.id}`)
-        .then((res) => setTransactions(res.data))
+      getUserTransactions(parsedUser.id)
+        .then((txs) => setTransactions(txs))
         .finally(() => setLoading(false));
     }
   }, []);
@@ -63,54 +50,23 @@ export default function DashboardPage() {
     setSendSuccess("");
 
     try {
-      // Check if recipient exists
-      const res = await axios.get(`http://localhost:4000/users?email=${recipientEmail}`);
-      if (res.data.length === 0) {
-        setSendError("Recipient not found");
-        setSending(false);
-        return;
-      }
-      const recipient = res.data[0];
+      await sendMoney(user.id, Number(amount), "sent", recipientEmail);
 
-      if (amount > user.balance) {
-        setSendError("Insufficient balance");
-        setSending(false);
-        return;
-      }
-
-      // Create transaction
-      await axios.post("http://localhost:4000/transactions", {
-        userId: user.id,
-        type: "sent",
-        amount,
-        to: recipient.email,
-        date: new Date().toISOString(),
-        note: "Sent via dashboard",
-      });
-
-      // Update sender balance
-      await axios.patch(`http://localhost:4000/users/${user.id}`, {
-        balance: user.balance - Number(amount),
-      });
-
-      // Update recipient balance
-      await axios.patch(`http://localhost:4000/users/${recipient.id}`, {
-        balance: recipient.balance + Number(amount),
-      });
-
-      // Refresh user and transactions
-      const updatedUser = { ...user, balance: user.balance - Number(amount) };
+      // Update local user balance
+      const updatedUser: User = { ...user, balance: user.balance - Number(amount) };
       setUser(updatedUser);
       localStorage.setItem("ks_user", JSON.stringify(updatedUser));
 
-      const txRes = await axios.get(`http://localhost:4000/transactions?userId=${user.id}`);
-      setTransactions(txRes.data);
+      // Refresh transactions
+      const updatedTxs = await getUserTransactions(user.id);
+      setTransactions(updatedTxs);
 
       setSendSuccess("Money sent successfully!");
       setRecipientEmail("");
       setAmount("");
       setShowModal(false);
     } catch (err) {
+      console.error(err);
       setSendError("Something went wrong. Try again.");
     } finally {
       setSending(false);
@@ -125,8 +81,12 @@ export default function DashboardPage() {
 
       {user && (
         <div className="mb-6">
-          <p className="text-lg">Welcome, <strong>{user.name}</strong></p>
-          <p className="text-lg mt-2">Balance: <strong className="text-green-600">${user.balance}</strong></p>
+          <p className="text-lg">
+            Welcome, <strong>{user.name || user.email}</strong>
+          </p>
+          <p className="text-lg mt-2">
+            Balance: <strong className="text-green-600">${user.balance}</strong>
+          </p>
         </div>
       )}
 
@@ -157,7 +117,7 @@ export default function DashboardPage() {
                 <tr key={tx.id} className="border-b">
                   <td className="py-2">{tx.type}</td>
                   <td className="py-2">${tx.amount}</td>
-                  <td className="py-2">{tx.type === "sent" ? tx.to : tx.from}</td>
+                  <td className="py-2">{tx.to || tx.from || "-"}</td>
                   <td className="py-2">{new Date(tx.date).toLocaleString()}</td>
                 </tr>
               ))}

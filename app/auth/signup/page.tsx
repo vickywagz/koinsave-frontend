@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { signupUser, loginUser, User } from "@/app/api/client";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -29,33 +29,26 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-
     try {
       // Check if user already exists
-      const res = await axios.get(`http://localhost:4000/users?email=${email}`);
-      if (res.data.length > 0) {
+      const existingUser: User | undefined = await loginUser(email, password);
+      if (existingUser) {
         setError("User with this email already exists");
-        setLoading(false);
         return;
       }
 
       // Create new user
-      const newUser = {
-        name,
-        email,
-        password,
-        balance: 0
-      };
+      const newUserResponse = await signupUser(email, password, name);
+      const newUser = newUserResponse.data;
 
-      await axios.post("http://localhost:4000/users", newUser);
-
-      // Optionally, store user in localStorage
+      // Save user to localStorage
       localStorage.setItem("ks_user", JSON.stringify(newUser));
 
-      // Redirect to dashboard
+      // Redirect to Dashboard
       router.push("/dashboard");
     } catch (err) {
       setError("Something went wrong. Try again.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -67,7 +60,9 @@ export default function SignupPage() {
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded shadow-md w-full max-w-sm"
       >
-        <h1 className="text-2xl font-bold mb-6 text-center text-green-600">Koinsave Signup</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-green-600">
+          Koinsave Signup
+        </h1>
 
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
 

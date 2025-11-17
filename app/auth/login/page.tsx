@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { loginUser, User } from "@/app/api/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,26 +15,26 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    // Simple client-side validation
+    // Basic client-side validation
     if (!email || !password) {
       setError("Please fill in all fields");
       return;
     }
 
     setLoading(true);
-
     try {
-      // Call mock API
-      const res = await axios.get(`http://localhost:4000/users?email=${email}&password=${password}`);
-      if (res.data.length === 0) {
+      const user: User | undefined = await loginUser(email, password);
+
+      if (!user) {
         setError("Invalid credentials");
       } else {
-        // Store user in localStorage
-        localStorage.setItem("ks_user", JSON.stringify(res.data[0]));
-        router.push("/dashboard"); // redirect after login
+        // Save user in localStorage
+        localStorage.setItem("ks_user", JSON.stringify(user));
+        router.push("/dashboard"); // Redirect to Dashboard
       }
     } catch (err) {
       setError("Something went wrong. Try again.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,9 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded shadow-md w-full max-w-sm"
       >
-        <h1 className="text-2xl font-bold mb-6 text-center text-green-600">Koinsave Login</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-green-600">
+          Koinsave Login
+        </h1>
 
         {error && (
           <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
