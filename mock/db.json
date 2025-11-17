@@ -1,0 +1,63 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Victory Wagor",
+      "email": "victory@example.com",
+      "password": "password123",
+      "balance": 11980
+    },
+    {
+      "id": "2",
+      "name": "Jane Doe",
+      "email": "jane@example.com",
+      "password": "password123",
+      "balance": 4320
+    },
+    {
+      "id": "3",
+      "name": "John Smith",
+      "email": "john@example.com",
+      "password": "password123",
+      "balance": 7500
+    }
+  ],
+  "transactions": [
+    {
+      "id": "1",
+      "userId": 1,
+      "type": "received",
+      "amount": 500,
+      "from": "jane@example.com",
+      "date": "2025-11-10T10:00:00Z",
+      "note": "Airtime"
+    },
+    {
+      "id": "2",
+      "userId": 1,
+      "type": "sent",
+      "amount": 1200,
+      "to": "vendor@shop.com",
+      "date": "2025-11-12T14:00:00Z",
+      "note": "Groceries"
+    },
+    {
+      "id": "3",
+      "userId": 2,
+      "type": "received",
+      "amount": 200,
+      "from": "john@example.com",
+      "date": "2025-11-15T09:00:00Z",
+      "note": "Refund"
+    },
+    {
+      "id": "af07",
+      "userId": "1",
+      "type": "sent",
+      "amount": 20,
+      "to": "jane@example.com",
+      "date": "2025-11-17T00:55:57.099Z",
+      "note": "Sent via dashboard"
+    }
+  ]
+}
